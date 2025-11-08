@@ -50,7 +50,6 @@
     backdrop-filter: blur(4px);
   }
 
-  /* left area: heart button */
   .nav-left{display:flex;align-items:center;gap:10px}
   .btn-heart{
     display:inline-grid;
@@ -65,7 +64,6 @@
   .btn-heart:active{transform:scale(.96)}
   .btn-heart[aria-pressed="true"]{background:var(--glass-2)}
 
-  /* right area: logo + name */
   .nav-right{display:flex;align-items:center;gap:10px;cursor:pointer}
   .nav-right img{height:42px;width:42px;border-radius:10px;object-fit:cover}
   .brand-name{font-weight:600;font-size:1.05rem}
@@ -88,7 +86,10 @@
     background:linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0.06));
     display:block;position:relative;cursor:pointer;
   }
-  .featured img{width:100%;height:160px;object-fit:cover;display:block}
+  /* aumenta altezza: mobile 220px, desktop 320px */
+  .featured img{width:100%;height:220px;object-fit:cover;display:block}
+  @media(min-width:900px){ .featured img{height:320px} }
+
   .featured .copy{
     position:absolute;left:12px;bottom:12px;background:rgba(0,0,0,0.45);
     padding:10px 12px;border-radius:10px;text-align:left;max-width:80%;
@@ -110,14 +111,19 @@
   .carousel::-webkit-scrollbar{height:8px}
   .carousel::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.12);border-radius:10px}
 
-  /* card */
+  /* card (più alte immagini 1:1) */
   .card{
     min-width:150px;max-width:150px;flex:0 0 auto;
     background:var(--glass);border-radius:12px;padding:10px;cursor:pointer;
     box-shadow:0 6px 18px rgba(0,0,0,0.12);scroll-snap-align:start;
     display:flex;flex-direction:column;gap:8px;
+    transition:transform .16s ease;
   }
-  .card img{width:100%;height:100px;object-fit:cover;border-radius:8px;display:block}
+  .card:active{transform:translateY(1px)}
+  /* immagine 1:1: width 100% e height uguale (mobile:140px, desktop:180/200px) */
+  .card img{width:100%;height:140px;object-fit:cover;border-radius:8px;display:block}
+  @media(min-width:900px){ .card{min-width:200px;max-width:200px} .card img{height:200px} }
+
   .card .title{font-size:0.95rem;font-weight:600}
   .card .desc{font-size:0.80rem;opacity:0.95;font-weight:300;line-height:1.1}
   .badge-free{margin-top:auto;font-size:0.78rem;color:#000;background:var(--accent-free);padding:6px;border-radius:8px;text-align:center;font-weight:700}
@@ -128,28 +134,20 @@
   /* ==================== POPUP ==================== */
   .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:200}
   .overlay.open{display:flex}
-  .modal{width:92%;max-width:420px;background:var(--glass-2);padding:18px;border-radius:12px;position:relative}
+  /* MODAL BIANCO come richiesto (testo scuro) */
+  .modal{width:92%;max-width:420px;background:#ffffff;padding:18px;border-radius:12px;position:relative;color:#111}
   .modal h3{margin:0 0 6px;font-size:1.05rem}
   .modal p{margin:0;font-size:0.95rem;font-weight:300}
   .modal .actions{margin-top:12px;display:flex;gap:8px;justify-content:center}
   .btn{padding:10px 14px;border-radius:10px;border:0;cursor:pointer;font-weight:700}
   .btn-primary{background:var(--accent-free);color:#000}
-  .btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.14);color:var(--text)}
+  .btn-ghost{background:transparent;border:1px solid rgba(0,0,0,0.08);color:#111}
+  .modal .close-x{position:absolute;right:10px;top:8px;border:0;background:transparent;font-size:20px;color:#111;cursor:pointer}
 
   /* accessibility focus */
-  button:focus, a:focus { outline:2px solid rgba(255,255,255,0.14); outline-offset:2px }
+  button:focus, a:focus { outline:2px solid rgba(0,0,0,0.08); outline-offset:2px }
 
-  /* reduce motion preference */
-  @media (prefers-reduced-motion: reduce){
-    *{transition:none!important}
-  }
-
-  /* larger screens: wider cards and grid fallback */
-  @media(min-width:900px){
-    .card{min-width:200px;max-width:200px}
-    .featured img{height:300px}
-  }
-
+  @media (prefers-reduced-motion: reduce){ *{transition:none!important} }
 </style>
 </head>
 <body>
@@ -174,7 +172,7 @@
       </div>
     </div>
 
-    <!-- FEATURED BANNER (rimane cliccabile su Aura+) -->
+    <!-- FEATURED BANNER: aumentata altezza e cliccabile -->
     <a class="featured" href="auraplus.html" aria-label="Apri Aura+">
       <img src="auraplus.png" alt="Banner Aura+" loading="lazy" decoding="async">
       <div class="copy">
@@ -184,6 +182,7 @@
     </a>
 
     <!-- SECTIONS -->
+
     <!-- Utility -->
     <section class="section" aria-labelledby="utilityTitle">
       <header>
@@ -193,7 +192,10 @@
 
       <div class="carousel" id="utilityCarousel" data-category="Utility">
         <!-- Aura Computer Management -->
-        <article class="card app" data-title="Aura Computer Management" data-desc="Monitora e gestisci il tuo PC con strumenti smart e visuali." tabindex="0" role="article" aria-label="Aura Computer Management">
+        <article class="card app" data-title="Aura Computer Management"
+                 data-desc="Monitora e gestisci il tuo PC con strumenti smart e visuali."
+                 data-link="auracomputermanagement.html"
+                 tabindex="0" role="article" aria-label="Aura Computer Management">
           <img src="auracomputermanagement.png" alt="Aura Computer Management" loading="lazy" decoding="async">
           <div class="title">Aura Computer Management</div>
           <div class="desc">Monitora e gestisci il tuo PC con strumenti smart e visuali.</div>
@@ -211,7 +213,10 @@
 
       <div class="carousel" id="lifestyleCarousel" data-category="Lifestyle">
         <!-- MatteChat -->
-        <article class="card app" data-title="MatteChat" data-desc="Applicazione minimal per la comunicazione semplice e criptata." tabindex="0" aria-label="MatteChat">
+        <article class="card app" data-title="MatteChat"
+                 data-desc="Applicazione minimal per la comunicazione semplice e criptata."
+                 data-link="mattechat.html"
+                 tabindex="0" aria-label="MatteChat">
           <img src="mattechat.png" alt="MatteChat" loading="lazy" decoding="async">
           <div class="title">MatteChat</div>
           <div class="desc">Applicazione minimal per la comunicazione semplice e criptata.</div>
@@ -219,7 +224,8 @@
         </article>
 
         <!-- Aura+ (anche in lista) -->
-        <article class="card app" data-title="Aura+" data-desc="Il portale esclusivo per esperienze, vantaggi e contenuti Aura." tabindex="0" aria-label="Aura+">
+        <article class="card app" data-title="Aura+" data-desc="Il portale esclusivo per esperienze, vantaggi e contenuti Aura."
+                 data-link="auraplus.html" tabindex="0" aria-label="Aura+">
           <img src="auraplus.png" alt="Aura+" loading="lazy" decoding="async">
           <div class="title">Aura+</div>
           <div class="desc">Il portale esclusivo per esperienze, vantaggi e contenuti Aura.</div>
@@ -227,7 +233,8 @@
         </article>
 
         <!-- Nyra -->
-        <article class="card app" data-title="Nyra" data-desc="L'intelligenza artificiale ufficiale di Aura." tabindex="0" aria-label="Nyra">
+        <article class="card app" data-title="Nyra" data-desc="L'intelligenza artificiale ufficiale di Aura."
+                 data-link="nyra.html" tabindex="0" aria-label="Nyra">
           <img src="nyra.png" alt="Nyra" loading="lazy" decoding="async">
           <div class="title">Nyra</div>
           <div class="desc">L'intelligenza artificiale ufficiale di Aura.</div>
@@ -257,7 +264,9 @@
 
       <div class="carousel" id="eduCarousel" data-category="Educazione">
         <!-- Cybersecurity IT -->
-        <article class="card app" data-title="Cybersecurity IT" data-desc="Accedi all’app Cybersecurity (IT)™ per novità, contatti e assistenza tramite AI." tabindex="0" aria-label="Cybersecurity IT">
+        <article class="card app" data-title="Cybersecurity IT"
+                 data-desc="Accedi all’app Cybersecurity (IT)™ per novità, contatti e assistenza tramite AI."
+                 data-link="cybersecurityit.html" tabindex="0" aria-label="Cybersecurity IT">
           <img src="cybersecurityit.png" alt="Cybersecurity IT" loading="lazy" decoding="async">
           <div class="title">Cybersecurity IT</div>
           <div class="desc">Accedi all’app Cybersecurity (IT)™ per novità, contatti e assistenza tramite AI.</div>
@@ -268,14 +277,15 @@
 
   </div> <!-- wrap end -->
 
-  <!-- ==================== POPUP CONTRIBUTI ==================== -->
+  <!-- ==================== POPUP CONTRIBUTI (overlay scuro + modal bianco) ==================== -->
   <div id="contribOverlay" class="overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Contribuisci al Store">
     <div class="modal" role="document">
+      <button class="close-x" id="closeContrib" aria-label="Chiudi">×</button>
       <h3>Contribuisci al Store</h3>
       <p>Vuoi aggiungere la tua app ad Aura Store e renderla disponibile agli utenti?</p>
       <div class="actions">
         <a class="btn btn-primary" href="https://3cgtsgco.forms.app/registrazione-app-su-aura-store" target="_blank" rel="noopener">Registrati ora</a>
-        <button class="btn btn-ghost" id="closeContrib">Chiudi</button>
+        <button class="btn btn-ghost" id="closeContrib2">Chiudi</button>
       </div>
     </div>
   </div>
@@ -285,12 +295,11 @@
    - Debounce per la ricerca (evita reflow continuo)
    - Filtra tutte le card (mostra/nasconde sezioni vuote)
    - Popup accessibile (Esc + click esterno)
-   - Comportamento minimo per performance mobile
+   - Clic/Enter su card -> redirect (usa data-link)
 =================================================================*/
-
 (() => {
   const searchInput = document.getElementById('searchInput');
-  const cards = Array.from(document.querySelectorAll('.app'));
+  const cards = Array.from(document.querySelectorAll('.card.app'));
   const sections = Array.from(document.querySelectorAll('.section'));
   let debounceTimer = 0;
 
@@ -300,7 +309,6 @@
 
   function filter(term){
     const q = normalize(term);
-    // for each card decide visibility
     cards.forEach(card => {
       const title = normalize(card.dataset.title);
       const desc = normalize(card.dataset.desc);
@@ -308,64 +316,56 @@
       card.style.display = show ? 'flex' : 'none';
     });
 
-    // check each carousel: hide empty ones
+    // mostra/nascondi sezioni in base alla visibilità delle card
     sections.forEach(section => {
       const carousel = section.querySelector('.carousel');
-      const visibleCard = carousel.querySelector('.card[style*="display: flex"], .card:not([style])');
-      // If carousel contains at least one visible .card -> show section; else if there's an .empty show it, else hide section
-      const hasVisible = Array.from(carousel.children).some(c => {
-        if (c.classList && c.classList.contains('card')) return window.getComputedStyle(c).display !== 'none';
-        // treat non-card content (like .empty) as visible only when no cards match
-        return false;
-      });
-
-      if (hasVisible) {
+      const cardsInCarousel = Array.from(carousel.querySelectorAll('.card'));
+      const visible = cardsInCarousel.some(c => window.getComputedStyle(c).display !== 'none');
+      if (visible) {
         section.style.display = '';
-        // hide any .empty message inside
         const empty = carousel.querySelector('.empty');
         if (empty) empty.style.display = 'none';
       } else {
-        // show the section only if there's an explicit empty message
         const empty = carousel.querySelector('.empty');
-        if (empty) {
-          section.style.display = '';
-          empty.style.display = '';
-        } else {
-          section.style.display = 'none';
-        }
+        if (empty) { section.style.display = ''; empty.style.display = ''; }
+        else { section.style.display = 'none'; }
       }
     });
   }
 
-  // debounce wrapper
   function onSearch(e){
     const val = e.target.value;
     clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => filter(val), 180); // 180ms debounce: responsive & cheap
+    debounceTimer = setTimeout(() => filter(val), 180);
   }
   searchInput.addEventListener('input', onSearch, {passive:true});
 
-  // ========== Popup contribuisci ==========
+  // ================= popup contribuisci =================
   const openBtn = document.getElementById('openContrib');
   const overlay = document.getElementById('contribOverlay');
   const closeBtn = document.getElementById('closeContrib');
+  const closeBtn2 = document.getElementById('closeContrib2');
 
   function openOverlay(){
     overlay.classList.add('open');
     overlay.setAttribute('aria-hidden','false');
     openBtn.setAttribute('aria-pressed','true');
-    // trap focus minimal
-    closeBtn.focus();
+    // set focus inside modal
+    closeBtn2.focus();
+    // prevent body scroll (simple)
+    document.body.style.overflow = 'hidden';
   }
   function closeOverlay(){
     overlay.classList.remove('open');
     overlay.setAttribute('aria-hidden','true');
     openBtn.setAttribute('aria-pressed','false');
     openBtn.focus();
+    document.body.style.overflow = '';
   }
 
   openBtn.addEventListener('click', openOverlay);
   closeBtn.addEventListener('click', closeOverlay);
+  closeBtn2.addEventListener('click', closeOverlay);
 
   overlay.addEventListener('click', (ev) => {
     if (ev.target === overlay) closeOverlay();
@@ -375,12 +375,28 @@
     if (ev.key === 'Escape' && overlay.classList.contains('open')) closeOverlay();
   });
 
-  // Home shortcut (logo click)
-  document.getElementById('homeBtn').addEventListener('click', () => {
-    window.scrollTo({top:0,behavior:'smooth'});
+  // ================= cards click -> redirect (data-link) + keyboard Enter =================
+  cards.forEach(card => {
+    const link = card.dataset.link;
+    if (!link) return;
+    // click
+    card.addEventListener('click', () => {
+      window.location.href = link;
+    });
+    // keyboard Enter/Space
+    card.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter' || ev.key === ' ') {
+        ev.preventDefault();
+        window.location.href = link;
+      }
+    });
+    // ensure card has role and tabindex already set in HTML for accessibility
   });
 
-  // initial filter (show everything correctly)
+  // home logo click: scroll to top
+  document.getElementById('homeBtn').addEventListener('click', () => window.scrollTo({top:0,behavior:'smooth'}));
+
+  // initial show
   filter('');
 })();
 </script>
