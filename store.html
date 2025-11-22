@@ -60,6 +60,14 @@
     font-size:18px;color:var(--text);
     cursor:pointer;line-height:1;
     transition:transform .12s ease,background .12s;
+    padding:0;
+  }
+  .btn-heart img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    border-radius:999px;
+    display:block;
   }
   .btn-heart:active{transform:scale(.96)}
   .btn-heart[aria-pressed="true"]{background:var(--glass-2)}
@@ -144,6 +152,13 @@
   .btn-ghost{background:transparent;border:1px solid rgba(0,0,0,0.08);color:#111}
   .modal .close-x{position:absolute;right:10px;top:8px;border:0;background:transparent;font-size:20px;color:#111;cursor:pointer}
 
+  /* Profile modal specific */
+  .profile-header{display:flex;gap:12px;align-items:center}
+  .profile-header img{width:72px;height:72px;border-radius:12px;object-fit:cover;border:1px solid rgba(0,0,0,0.06)}
+  .profile-info h4{margin:0;font-size:1rem}
+  .profile-info p{margin:2px 0 0;font-size:0.9rem;color:#444}
+  .profile-saldo{margin-top:10px;font-weight:700;font-size:1.05rem;color:#111}
+
   /* accessibility focus */
   button:focus, a:focus { outline:2px solid rgba(0,0,0,0.08); outline-offset:2px }
 
@@ -156,7 +171,12 @@
     <!-- NAVBAR -->
     <nav class="appbar" role="navigation" aria-label="Barra principale">
       <div class="nav-left">
-        <button class="btn-heart" aria-label="Contribuisci" id="openContrib" aria-pressed="false">🤍</button>
+        <!-- Qui al posto del cuore mettiamo l'immagine profilo dell'utente.
+             Manteniamo lo stesso id per minimizzare le modifiche: openContrib -->
+        <button class="btn-heart" aria-label="Profilo" id="openContrib" aria-pressed="false">
+          <!-- src impostato dinamicamente da JS -->
+          <img id="profileImgBtn" src="aurastore.png" alt="Immagine profilo">
+        </button>
       </div>
 
       <div class="nav-right" role="link" tabindex="0" id="homeBtn" aria-label="Vai alla home">
@@ -300,18 +320,79 @@
     </div>
   </div>
 
+  <!-- ==================== POPUP PROFILO (nuovo) ==================== -->
+  <div id="profileOverlay" class="overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Profilo utente">
+    <div class="modal" role="document" aria-live="polite">
+      <button class="close-x" id="closeProfile" aria-label="Chiudi">×</button>
+      <div class="profile-header">
+        <img id="profileModalImg" src="aurastore.png" alt="Immagine profilo">
+        <div class="profile-info">
+          <h4 id="profileName">Nome Cognome</h4>
+          <p id="profileEmail">--</p>
+        </div>
+      </div>
+
+      <div class="profile-saldo" id="profileSaldo">Saldo: 0</div>
+
+      <div class="actions" style="margin-top:14px;flex-direction:column;gap:8px">
+        <a class="btn btn-primary" id="redeemBtn" href="redeem.html">Riscatta codice</a>
+        <button class="btn btn-ghost" id="contribFromProfile">Contribuisci anche tu</button>
+        <button class="btn" id="logoutBtn" style="background:#f5f5f5;border:1px solid rgba(0,0,0,0.06)">Esci</button>
+      </div>
+    </div>
+  </div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
 <script>
 /* ==================== JS LEGGERO E PERFORMANTE ====================
    - Debounce per la ricerca (evita reflow continuo)
    - Filtra tutte le card (mostra/nasconde sezioni vuote)
    - Popup accessibile (Esc + click esterno)
    - Clic/Enter su card -> redirect (usa data-link)
+   - Integrazione Firebase: mostra immagine profilo utente al posto del cuore
 =================================================================*/
+
 (() => {
+  /* ---------------- FIREBASE CONFIG (fornita) ---------------- */
+  const firebaseConfig = {
+      apiKey: "AIzaSyDsrHAtIh5bsYDHa1wz0LMcmciChAoRikU",
+      authDomain: "myauraid-f03c6.firebaseapp.com",
+      projectId: "myauraid-f03c6",
+      storageBucket: "myauraid-f03c6.appspot.com",
+      messagingSenderId: "190478237725",
+      appId: "1:190478237725:web:0d39907473f511b85a06f4"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  /* ---------------- UI ELEMENTS ---------------- */
   const searchInput = document.getElementById('searchInput');
   const cards = Array.from(document.querySelectorAll('.card.app'));
   const sections = Array.from(document.querySelectorAll('.section'));
   let debounceTimer = 0;
+
+  const profileBtn = document.getElementById('openContrib'); // mantiene id originale
+  const profileImgBtn = document.getElementById('profileImgBtn');
+
+  const profileOverlay = document.getElementById('profileOverlay');
+  const closeProfile = document.getElementById('closeProfile');
+  const profileModalImg = document.getElementById('profileModalImg');
+  const profileName = document.getElementById('profileName');
+  const profileEmail = document.getElementById('profileEmail');
+  const profileSaldo = document.getElementById('profileSaldo');
+
+  const contribOverlay = document.getElementById('contribOverlay');
+  const openContribOld = null; // placeholder - non più usato
+  const closeContrib = document.getElementById('closeContrib');
+  const closeContrib2 = document.getElementById('closeContrib2');
+
+  const contribFromProfile = document.getElementById('contribFromProfile');
+  const redeemBtn = document.getElementById('redeemBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
 
   function normalize(str){
     return (str || '').trim().toLowerCase();
@@ -350,41 +431,6 @@
   }
   searchInput.addEventListener('input', onSearch, {passive:true});
 
-  // ================= popup contribuisci =================
-  const openBtn = document.getElementById('openContrib');
-  const overlay = document.getElementById('contribOverlay');
-  const closeBtn = document.getElementById('closeContrib');
-  const closeBtn2 = document.getElementById('closeContrib2');
-
-  function openOverlay(){
-    overlay.classList.add('open');
-    overlay.setAttribute('aria-hidden','false');
-    openBtn.setAttribute('aria-pressed','true');
-    // set focus inside modal
-    closeBtn2.focus();
-    // prevent body scroll (simple)
-    document.body.style.overflow = 'hidden';
-  }
-  function closeOverlay(){
-    overlay.classList.remove('open');
-    overlay.setAttribute('aria-hidden','true');
-    openBtn.setAttribute('aria-pressed','false');
-    openBtn.focus();
-    document.body.style.overflow = '';
-  }
-
-  openBtn.addEventListener('click', openOverlay);
-  closeBtn.addEventListener('click', closeOverlay);
-  closeBtn2.addEventListener('click', closeOverlay);
-
-  overlay.addEventListener('click', (ev) => {
-    if (ev.target === overlay) closeOverlay();
-  });
-
-  document.addEventListener('keydown', (ev) => {
-    if (ev.key === 'Escape' && overlay.classList.contains('open')) closeOverlay();
-  });
-
   // ================= cards click -> redirect (data-link) + keyboard Enter =================
   cards.forEach(card => {
     const link = card.dataset.link;
@@ -400,7 +446,6 @@
         window.location.href = link;
       }
     });
-    // ensure card has role and tabindex already set in HTML for accessibility
   });
 
   // home logo click: scroll to top
@@ -408,6 +453,152 @@
 
   // initial show
   filter('');
+
+  /* ==================== GESTIONE POPUP ==================== */
+
+  // Contribuisci overlay (manteniamo comportamento esistente per la finestra contrib)
+  function openContribOverlay(){
+    contribOverlay.classList.add('open');
+    contribOverlay.setAttribute('aria-hidden','false');
+    // quando openContrib (ora è profileBtn) ha aria-pressed true solo se apriamo contrib
+    // ma lo usiamo come profilo, quindi lasciamo aria-pressed come stato del profilo aperto
+    profileBtn.setAttribute('aria-pressed','true');
+    // set focus inside modal
+    closeContrib2.focus();
+    document.body.style.overflow = 'hidden';
+  }
+  function closeContribOverlay(){
+    contribOverlay.classList.remove('open');
+    contribOverlay.setAttribute('aria-hidden','true');
+    profileBtn.setAttribute('aria-pressed','false');
+    profileBtn.focus();
+    document.body.style.overflow = '';
+  }
+
+  closeContrib.addEventListener('click', closeContribOverlay);
+  closeContrib2.addEventListener('click', closeContribOverlay);
+
+  contribOverlay.addEventListener('click', (ev) => {
+    if (ev.target === contribOverlay) closeContribOverlay();
+  });
+
+  /* ==================== PROFILE OVERLAY (nuovo comportamento) ==================== */
+  function openProfileOverlay(){
+    profileOverlay.classList.add('open');
+    profileOverlay.setAttribute('aria-hidden','false');
+    profileBtn.setAttribute('aria-pressed','true');
+    // focus sul close
+    closeProfile.focus();
+    document.body.style.overflow = 'hidden';
+  }
+  function closeProfileOverlay(){
+    profileOverlay.classList.remove('open');
+    profileOverlay.setAttribute('aria-hidden','true');
+    profileBtn.setAttribute('aria-pressed','false');
+    profileBtn.focus();
+    document.body.style.overflow = '';
+  }
+
+  // click sul bottone immagine profilo -> apri profilo
+  profileBtn.addEventListener('click', (ev) => {
+    ev.preventDefault();
+    openProfileOverlay();
+  });
+
+  closeProfile.addEventListener('click', closeProfileOverlay);
+
+  profileOverlay.addEventListener('click', (ev) => {
+    if (ev.target === profileOverlay) closeProfileOverlay();
+  });
+
+  // ESC per chiudere modali (se aperti)
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape') {
+      if (profileOverlay.classList.contains('open')) closeProfileOverlay();
+      if (contribOverlay.classList.contains('open')) closeContribOverlay();
+    }
+  });
+
+  // "Contribuisci anche tu" dentro profilo apre il vecchio popup contrib
+  contribFromProfile.addEventListener('click', () => {
+    closeProfileOverlay();
+    // apri il popup contrib originale
+    openContribOverlay();
+  });
+
+  // Riscatta (link già presente come href)
+  redeemBtn.addEventListener('click', () => {
+    // lasciare comportamento default che naviga a redeem.html
+    // chiudiamo profilo
+    closeProfileOverlay();
+  });
+
+  // Logout
+  logoutBtn.addEventListener('click', () => {
+    auth.signOut().then(() => {
+      // reindirizza a index.html dopo logout
+      window.location.href = 'index.html';
+    }).catch((err) => {
+      console.error('Errore logout:', err);
+      // comunque prova a reindirizzare
+      window.location.href = 'index.html';
+    });
+  });
+
+  /* ==================== FIREBASE: AUTH + CARICAMENTO DATI UTENTE ---------------- */
+  // Se non sei loggato -> reindirizza a index.html
+  auth.onAuthStateChanged(async (user) => {
+    if (!user) {
+      // Non loggato -> porta alla index
+      window.location.href = 'index.html';
+      return;
+    }
+    // Se loggato, carica dati da users/{UID}
+    try {
+      const uid = user.uid;
+      const doc = await db.collection('users').doc(uid).get();
+      if (!doc.exists) {
+        // utente senza documento: mostra default ma lascia accesso
+        profileImgBtn.src = 'aurastore.png';
+        profileImgBtn.alt = (user.displayName || 'Profilo');
+        profileModalImg.src = 'aurastore.png';
+        profileName.textContent = user.displayName || 'Utente';
+        profileEmail.textContent = user.email || '';
+        profileSaldo.textContent = 'Saldo: 0';
+        return;
+      }
+      const data = doc.data() || {};
+      const profileImage = data.profileImage || data.photoURL || 'aurastore.png';
+      const nome = data.nome || data.nomeCompleto || user.displayName || '';
+      const cognome = data.cognome || '';
+      const saldo = (typeof data.saldo !== 'undefined') ? data.saldo : 0;
+      const email = data.email || user.email || '';
+
+      // Aggiorna UI
+      profileImgBtn.src = profileImage;
+      profileImgBtn.alt = `${nome} ${cognome}`.trim() || 'Profilo';
+
+      profileModalImg.src = profileImage;
+      profileModalImg.alt = `${nome} ${cognome}`.trim() || 'Immagine profilo';
+
+      profileName.textContent = `${nome} ${cognome}`.trim() || (user.displayName || 'Utente');
+      profileEmail.textContent = email || '';
+
+      profileSaldo.textContent = 'Saldo: ' + saldo;
+
+    } catch (err) {
+      console.error('Errore caricamento profilo:', err);
+      // fallback: lascia immagini default
+      profileImgBtn.src = 'aurastore.png';
+      profileModalImg.src = 'aurastore.png';
+      profileName.textContent = user.displayName || 'Utente';
+      profileSaldo.textContent = 'Saldo: 0';
+    }
+  });
+
+  /* ==================== Misc: chiusura overlay contrib usato dal profilo ==================== */
+  // (già gestito sopra)
+
 })();
 </script>
 </body>
