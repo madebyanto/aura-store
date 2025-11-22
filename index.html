@@ -112,7 +112,7 @@ loginForm.addEventListener('submit', function(e){
             if(doc.exists){
                 const userData = doc.data();
                 if(userData.developer){
-                    window.location.href = "dashboard.html";
+                    window.location.href = "index-beta.html";
                 } else {
                     devAvatar.src = user.photoURL || "auraaccount.png";
                     popupDev.style.display="flex";
